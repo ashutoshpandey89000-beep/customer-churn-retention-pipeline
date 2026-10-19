@@ -1,0 +1,41 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Secrets and environment configs
+.env
+.env.local
+
+# IDE and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Airflow logs and run files
+airflow/logs/
+airflow/airflow.cfg
+airflow/webserver_config.py
+standalone_admin_password.txt
+
+# Generated raw and curated datasets (preserve folder structure via .gitkeep)
+data/raw/*.csv
+data/curated/*.csv
+data/curated/*.json
+data/curated/*.md
+!data/raw/.gitkeep
+!data/curated/.gitkeep
