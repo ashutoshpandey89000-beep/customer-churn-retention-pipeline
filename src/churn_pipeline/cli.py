@@ -2,6 +2,9 @@
 
 import argparse
 import json
+import http.server
+import socketserver
+import webbrowser
 from pathlib import Path
 from .generate import generate_data
 from .load import run_pipeline
@@ -27,6 +30,10 @@ def main():
     # 3. Report command
     report_cmd = sub.add_parser("report", help="Display verified data quality and churn KPI audit report")
     report_cmd.add_argument("--curated-dir", default="data/curated", help="Directory where reports are located")
+
+    # 4. Demo command
+    demo_cmd = sub.add_parser("demo", help="Launch live interactive portfolio demo in web browser")
+    demo_cmd.add_argument("--port", type=int, default=8501, help="Port to serve the interactive demo on")
 
     args = parser.parse_args()
 
@@ -55,6 +62,18 @@ def main():
         with open(report_file, "r", encoding="utf-8") as f:
             data = json.load(f)
         print(json.dumps(data, indent=2))
+
+    elif args.command == "demo":
+        port = args.port
+        print(f"Serving interactive live demo at: http://localhost:{port}/docs/index.html")
+        webbrowser.open(f"http://localhost:{port}/docs/index.html")
+        handler = http.server.SimpleHTTPRequestHandler
+        with socketserver.TCPServer(("", port), handler) as httpd:
+            print("Press Ctrl+C to stop the demo server.")
+            try:
+                httpd.serve_forever()
+            except KeyboardInterrupt:
+                print("\nDemo server stopped.")
 
 
 if __name__ == "__main__":

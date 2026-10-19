@@ -4,6 +4,30 @@ A production-grade, end-to-end data engineering portfolio project that synthesiz
 
 ---
 
+## 🌐 Live Interactive Demo (Resume Showcase)
+
+> **Live Demo Link:** `https://YOUR_GITHUB_USERNAME.github.io/customer-churn-retention-pipeline/`  
+> *(Deployable to GitHub Pages in 2 clicks, or launch locally with a single command below)*
+
+An interactive, responsive executive analytics demo featuring:
+- **Interactive KPI Dashboard:** Real-time dynamic filtering across Contract Types, Subscription Plans, Payment Channels, and Marketing Funnels.
+- **Customer Data Explorer:** Filterable, searchable table across all 1,000 curated customer lifecycle records with pagination.
+- **SQL Analytics Studio:** Interactive query workbench with pre-loaded queries and instant result rendering from PostgreSQL warehouse views.
+- **Airflow DAG Visualizer:** Visual walkthrough of the 4-task pipeline with verified execution logs and runtime benchmarks.
+
+### Launch Live Demo Locally (One Command):
+```powershell
+python -m churn_pipeline.cli demo
+```
+*Opens automatically in your default browser at `http://localhost:8501/docs/index.html`.*
+
+### Enable Public Live Demo on GitHub (For Resume Links):
+1. In your GitHub repository, navigate to **Settings** > **Pages**.
+2. Under **Build and deployment** > **Branch**: Select `main` and folder `/ (root)` or `/docs`.
+3. Click **Save**. Your live URL is instantly active and ready to attach directly to your resume!
+
+---
+
 ## Executive Dashboard & Visual Proof
 
 ### 1. Verified Analytics Dashboard

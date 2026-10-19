@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Churn & Retention Analytics | Live Engineering Demo</title>
+  <meta name="description" content="Production data engineering portfolio project demonstrating customer churn and retention analytics with Python, PostgreSQL, Apache Airflow, and Docker.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="churn_demo_data.js"></script>
+  <style>
+    :root {
+      --bg-main: #0B0F19;
+      --bg-card: #111827;
+      --bg-card-hover: #162032;
+      --border: #1F2937;
+      --border-accent: #374151;
+      --text-main: #F9FAFB;
+      --text-muted: #9CA3AF;
+      --text-dim: #6B7280;
+      --cyan: #38BDF8;
+      --cyan-glow: rgba(56, 189, 248, 0.15);
+      --emerald: #10B981;
+      --emerald-glow: rgba(16, 185, 129, 0.15);
+      --rose: #F43F5E;
+      --rose-glow: rgba(244, 63, 94, 0.15);
+      --amber: #F59E0B;
+      --purple: #A855F7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation */
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #0284C7, #38BDF8);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #FFF;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+    .brand-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--emerald-glow);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .btn-secondary {
+      background: #1F2937;
+      color: var(--text-main);
+      border: 1px solid var(--border-accent);
+    }
+    .btn-secondary:hover {
+      background: #2D3748;
+      border-color: var(--cyan);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284C7, #0EA5E9);
+      color: #FFF;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(14, 165, 233, 0.4);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.75rem 1.5rem;
+      width: 100%;
+    }
+
+    /* Hero Banner */
+    .hero {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.1) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.25rem;
+    }
+    .hero-text h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.3rem;
+      background: linear-gradient(120deg, #FFFFFF 40%, #94A3B8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-text p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .author-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #1E293B;
+      border: 1px solid #334155;
+      padding: 0.4rem 0.8rem;
+      border-radius: 10px;
+      font-size: 0.8rem;
+    }
+    .author-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #0284C7;
+      color: white;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+
+    /* Tabs Bar */
+    .tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .tab-btn.active {
+      color: var(--cyan);
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .filter-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .filter-select {
+      background: #1F2937;
+      color: var(--text-main);
+      border: 1px solid var(--border-accent);
+      padding: 0.45rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-select:focus {
+      border-color: var(--cyan);
+    }
+    .filter-count {
+      font-size: 0.825rem;
+      color: var(--cyan);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* KPI Metrics Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-accent);
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+    .kpi-card.cyan::before { background: var(--cyan); }
+    .kpi-card.rose::before { background: var(--rose); }
+    .kpi-card.emerald::before { background: var(--emerald); }
+    .kpi-card.amber::before { background: var(--amber); }
+
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+    .kpi-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 0.35rem;
+    }
+    .kpi-card.cyan .kpi-value { color: var(--cyan); }
+    .kpi-card.rose .kpi-value { color: var(--rose); }
+    .kpi-card.emerald .kpi-value { color: var(--emerald); }
+    .kpi-card.amber .kpi-value { color: var(--amber); }
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .chart-badge {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+    }
+    .chart-container {
+      position: relative;
+      flex: 1;
+      min-height: 250px;
+    }
+
+    /* Table Styles (Data Explorer) */
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .table-toolbar {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .search-input {
+      background: #1F2937;
+      border: 1px solid var(--border-accent);
+      color: var(--text-main);
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      width: 260px;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--cyan); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.825rem;
+    }
+    th {
+      background: #0D131F;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #1A2234;
+      color: #E2E8F0;
+    }
+    tr:hover td { background: var(--bg-card-hover); }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .badge-active { background: var(--emerald-glow); color: var(--emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-churned { background: var(--rose-glow); color: var(--rose); border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    .pagination {
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0D131F;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .page-controls { display: flex; gap: 0.5rem; }
+
+    /* SQL Studio */
+    .sql-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 900px) {
+      .sql-layout { grid-template-columns: 1fr; }
+    }
+    .sql-sidebar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .sql-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.6rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    .sql-tab:hover { background: #1F2937; color: var(--text-main); }
+    .sql-tab.active { background: #1F2937; color: var(--cyan); font-weight: 700; border-left: 3px solid var(--cyan); }
+    .sql-editor-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .sql-editor-header {
+      background: #0D131F;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .code-box {
+      background: #0B0F19;
+      padding: 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.825rem;
+      color: #38BDF8;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+    .sql-results {
+      padding: 1.25rem;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    /* Architecture Visualizer */
+    .arch-flow {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .arch-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      position: relative;
+    }
+    .arch-step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #0284C7;
+      color: white;
+      font-weight: bold;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+    .arch-step h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    .arch-step p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .arch-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.85rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--emerald);
+      background: var(--emerald-glow);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      background: #0D131F;
+      padding: 1.5rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: auto;
+    }
+    footer a { color: var(--cyan); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header>
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">CC</div>
+        <div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span class="brand-title">Customer Churn Analytics</span>
+            <span class="brand-badge">Production Verified</span>
+          </div>
+          <div style="font-size:0.75rem; color:var(--text-dim);">PostgreSQL 16 • Apache Airflow • Docker</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a href="https://github.com/ashutoshpandey89000/customer-churn-retention-pipeline" target="_blank" class="btn btn-secondary" id="github-link">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub Repo
+        </a>
+        <button onclick="downloadCuratedCSV()" class="btn btn-primary" id="download-btn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Export Dataset
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Hero / Recruiter Info -->
+    <div class="hero">
+      <div class="hero-text">
+        <h1>Customer Churn & Retention Analytics Pipeline</h1>
+        <p>A complete data engineering pipeline analyzing subscription lifecycle metrics, contract commitment sensitivity, and revenue retention.</p>
+      </div>
+      <div class="author-badge">
+        <div class="author-avatar">AP</div>
+        <div>
+          <div style="font-weight:700; color:var(--text-main);">Ashutosh Pandey</div>
+          <div style="color:var(--text-dim); font-size:0.75rem;">Data Engineer Portfolio Showcase</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Executive Dashboard
+      </button>
+      <button class="tab-btn" onclick="switchTab('explorer')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Customer Data Explorer
+      </button>
+      <button class="tab-btn" onclick="switchTab('sql')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+        SQL Analytics Studio
+      </button>
+      <button class="tab-btn" onclick="switchTab('airflow')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Airflow Pipeline Architecture
+      </button>
+    </div>
+
+    <!-- TAB 1: EXECUTIVE DASHBOARD -->
+    <div id="tab-dashboard">
+      <!-- Interactive Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-controls">
+          <select id="filter-contract" class="filter-select" onchange="applyFilters()">
+            <option value="ALL">All Contracts</option>
+            <option value="Month-to-Month">Month-to-Month</option>
+            <option value="One-Year">One-Year</option>
+            <option value="Two-Year">Two-Year</option>
+          </select>
+          <select id="filter-plan" class="filter-select" onchange="applyFilters()">
+            <option value="ALL">All Plans</option>
+            <option value="Basic">Basic ($9.99)</option>
+            <option value="Standard">Standard ($19.99)</option>
+            <option value="Premium">Premium ($34.99)</option>
+            <option value="Family">Family ($44.99)</option>
+          </select>
+          <select id="filter-payment" class="filter-select" onchange="applyFilters()">
+            <option value="ALL">All Payment Methods</option>
+            <option value="Credit Card">Credit Card</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="UPI">UPI</option>
+            <option value="Electronic Check">Electronic Check</option>
+          </select>
+          <select id="filter-channel" class="filter-select" onchange="applyFilters()">
+            <option value="ALL">All Acquisition Channels</option>
+            <option value="organic">Organic</option>
+            <option value="paid_search">Paid Search</option>
+            <option value="referral">Referral</option>
+            <option value="social">Social</option>
+            <option value="email">Email</option>
+          </select>
+          <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+        </div>
+        <div class="filter-count">
+          <span id="active-count">1,000</span> Customers Filtered
+        </div>
+      </div>
+
+      <!-- KPI Metrics Grid -->
+      <div class="kpi-grid">
+        <div class="kpi-card cyan">
+          <div class="kpi-label">Total Customers</div>
+          <div class="kpi-value" id="kpi-total">1,000</div>
+          <div class="kpi-sub">Cohort Base Population</div>
+        </div>
+        <div class="kpi-card rose">
+          <div class="kpi-label">Overall Churn Rate</div>
+          <div class="kpi-value" id="kpi-churn">27.5%</div>
+          <div class="kpi-sub" id="kpi-churn-sub">275 Churned Users</div>
+        </div>
+        <div class="kpi-card emerald">
+          <div class="kpi-label">Retention Rate</div>
+          <div class="kpi-value" id="kpi-retention">72.5%</div>
+          <div class="kpi-sub" id="kpi-retention-sub">725 Retained Users</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Active MRR</div>
+          <div class="kpi-value" id="kpi-mrr">$19,218</div>
+          <div class="kpi-sub" id="kpi-lost-mrr">Lost MRR: $7,992</div>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Churn Rate by Contract Commitment</span>
+            <span class="chart-badge">Commitment Sensitivity</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-contract"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Churn Rate by Subscription Plan</span>
+            <span class="chart-badge">Tier Performance</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-plan"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Churn Rate by Billing Method</span>
+            <span class="chart-badge">Payment Channel Friction</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-payment"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Churn by Customer Tenure Cohort</span>
+            <span class="chart-badge">Lifecycle Vulnerability</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-tenure"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Monthly Recurring Revenue (MRR) Breakdown</span>
+            <span class="chart-badge">Active vs Lost</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-revenue"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Monthly Churn & Retention Growth</span>
+            <span class="chart-badge">Cohort Timeline</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-monthly"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CUSTOMER DATA EXPLORER -->
+    <div id="tab-explorer" style="display:none;">
+      <div class="table-container">
+        <div class="table-toolbar">
+          <input type="text" id="table-search" class="search-input" placeholder="Search by name, city, channel..." oninput="handleTableSearch()">
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <select id="status-filter" class="filter-select" onchange="handleTableSearch()">
+              <option value="ALL">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="churned">Churned Only</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer ID</th>
+                <th>Name</th>
+                <th>City</th>
+                <th>Plan</th>
+                <th>Contract</th>
+                <th>Payment</th>
+                <th>MRR ($)</th>
+                <th>Tenure</th>
+                <th>Status</th>
+                <th>Total Paid ($)</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <!-- Dynamically rendered -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="page-info">Showing 1 to 15 of 1,000 customers</span>
+          <div class="page-controls">
+            <button class="btn btn-secondary" onclick="prevPage()" id="btn-prev">Previous</button>
+            <button class="btn btn-secondary" onclick="nextPage()" id="btn-next">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SQL ANALYTICS STUDIO -->
+    <div id="tab-sql" style="display:none;">
+      <div class="sql-layout">
+        <div class="sql-sidebar">
+          <button class="sql-tab active" onclick="selectSqlQuery('kpi_summary')">1. Executive KPI Summary</button>
+          <button class="sql-tab" onclick="selectSqlQuery('contract_performance')">2. Contract Performance</button>
+          <button class="sql-tab" onclick="selectSqlQuery('plan_performance')">3. Plan Tier Analysis</button>
+          <button class="sql-tab" onclick="selectSqlQuery('payment_method_performance')">4. Payment Methods</button>
+          <button class="sql-tab" onclick="selectSqlQuery('tenure_cohorts')">5. Customer Tenure Cohorts</button>
+          <button class="sql-tab" onclick="selectSqlQuery('monthly_churn')">6. Monthly Churn Trend</button>
+          <button class="sql-tab" onclick="selectSqlQuery('customer_cohorts')">7. Signup Cohorts</button>
+          <button class="sql-tab" onclick="selectSqlQuery('payment_status_summary')">8. Payment Transactions</button>
+          <button class="sql-tab" onclick="selectSqlQuery('revenue_by_status')">9. Revenue Breakdown</button>
+        </div>
+        <div class="sql-editor-card">
+          <div class="sql-editor-header">
+            <span style="font-weight:700; font-size:0.9rem;" id="sql-view-title">analytics.kpi_summary</span>
+            <button class="btn btn-primary" onclick="executeCurrentQuery()">Run Query</button>
+          </div>
+          <div class="code-box" id="sql-code-display">SELECT * FROM analytics.kpi_summary;</div>
+          <div class="sql-results" id="sql-table-output">
+            <!-- Dynamically populated from SQL_VIEWS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: AIRFLOW PIPELINE ARCHITECTURE -->
+    <div id="tab-airflow" style="display:none;">
+      <div class="arch-flow">
+        <div class="arch-step">
+          <div class="arch-step-num">1</div>
+          <h3>generate_synthetic_data</h3>
+          <p>Generates 1,000 reproducible customer, subscription, and payment transaction records with seeded pseudo-random distribution.</p>
+          <div class="arch-status">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>
+            SUCCESS (Duration: 0.9s)
+          </div>
+        </div>
+
+        <div class="arch-step">
+          <div class="arch-step-num">2</div>
+          <h3>validate_and_transform</h3>
+          <p>Executes 7 data-quality checks, calculates tenure months, creates lifecycle cohorts, and builds curated feature datasets.</p>
+          <div class="arch-status">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>
+            SUCCESS (Duration: 0.8s)
+          </div>
+        </div>
+
+        <div class="arch-step">
+          <div class="arch-step-num">3</div>
+          <h3>load_to_postgres</h3>
+          <p>Truncates and transactionally inserts 1,000 records into PostgreSQL 16 warehouse, creates indexes, and publishes 9 views.</p>
+          <div class="arch-status">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>
+            SUCCESS (Duration: 2.1s)
+          </div>
+        </div>
+
+        <div class="arch-step">
+          <div class="arch-step-num">4</div>
+          <h3>verify_analytics_kpis</h3>
+          <p>Queries analytics.kpi_summary view, asserts reconciliation math (churned + retained == total), and verifies zero anomalies.</p>
+          <div class="arch-status">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>
+            SUCCESS (Duration: 0.6s)
+          </div>
+        </div>
+      </div>
+
+      <!-- Airflow Execution Log Panel -->
+      <div class="table-container" style="padding:1.25rem;">
+        <h3 style="font-size:1rem; margin-bottom:0.75rem;">Airflow Verified Task Execution Logs</h3>
+        <pre class="code-box" style="border:1px solid var(--border); border-radius:10px; color:#A7F3D0;">
+[2026-10-19T10:44:06+00:00] {taskinstance.py:2889} INFO - Executing &lt;Task(PythonOperator): verify_analytics_kpis&gt;
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO - Verified PostgreSQL Analytics KPIs:
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO -   total_customers: 1000
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO -   churned_customers: 275
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO -   retained_customers: 725
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO -   overall_churn_rate_pct: 27.50%
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO -   overall_retention_rate_pct: 72.50%
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO -   average_tenure_months: 19.1
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO -   active_mrr: $19,217.75
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO -   churned_mrr: $7,992.25
+[2026-10-19T10:44:06+00:00] {logging_mixin.py:190} INFO - Reconciliation check PASSED: churned + retained == total
+[2026-10-19T10:44:07+00:00] {taskinstance.py:352} INFO - Marking task as SUCCESS. dag_id=customer_churn_retention_pipeline
+        </pre>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div style="margin-bottom:0.4rem;">
+      Customer Churn & Retention Analytics Pipeline • Built with Python, Pandas, PostgreSQL, Docker, and Apache Airflow
+    </div>
+    <div>
+      Portfolio Project by <strong style="color:var(--text-main);">Ashutosh Pandey</strong> • <a href="mailto:ashutoshpandey89000@gmail.com">ashutoshpandey89000@gmail.com</a>
+    </div>
+  </footer>
+
+  <script>
+    // Global State
+    let allData = window.CHURN_DATA || [];
+    let filteredData = [...allData];
+    let currentPage = 1;
+    const pageSize = 15;
+    let charts = {};
+    let activeSqlQuery = 'kpi_summary';
+
+    const sqlQueries = {
+      kpi_summary: {
+        title: "analytics.kpi_summary",
+        sql: "SELECT * FROM analytics.kpi_summary;"
+      },
+      contract_performance: {
+        title: "analytics.contract_performance",
+        sql: "SELECT contract_type, subscribers, churned_subscribers, active_subscribers, churn_rate_pct, retention_rate_pct, monthly_revenue\nFROM analytics.contract_performance\nORDER BY churn_rate_pct DESC;"
+      },
+      plan_performance: {
+        title: "analytics.plan_performance",
+        sql: "SELECT plan_name, subscribers, churned_subscribers, active_subscribers, churn_rate_pct, monthly_revenue\nFROM analytics.plan_performance\nORDER BY monthly_revenue DESC;"
+      },
+      payment_method_performance: {
+        title: "analytics.payment_method_performance",
+        sql: "SELECT payment_method, subscribers, churned_subscribers, active_subscribers, churn_rate_pct, active_mrr\nFROM analytics.payment_method_performance\nORDER BY churn_rate_pct DESC;"
+      },
+      tenure_cohorts: {
+        title: "analytics.tenure_cohorts",
+        sql: "SELECT tenure_group, subscribers, churned_subscribers, active_subscribers, churn_rate_pct, avg_tenure_months, mrr_lost_to_churn, active_mrr\nFROM analytics.tenure_cohorts\nORDER BY churn_rate_pct DESC;"
+      },
+      monthly_churn: {
+        title: "analytics.monthly_churn",
+        sql: "SELECT month, eligible_customers, churned_customers, active_customers, churn_rate_pct, retention_rate_pct\nFROM analytics.monthly_churn\nORDER BY month;"
+      },
+      customer_cohorts: {
+        title: "analytics.customer_cohorts",
+        sql: "SELECT signup_month, customers, churned_customers, retained_customers, cohort_churn_pct, cohort_retention_pct\nFROM analytics.customer_cohorts\nORDER BY signup_month LIMIT 15;"
+      },
+      payment_status_summary: {
+        title: "analytics.payment_status_summary",
+        sql: "SELECT payment_status, event_count, total_amount, avg_amount\nFROM analytics.payment_status_summary\nORDER BY total_amount DESC;"
+      },
+      revenue_by_status: {
+        title: "analytics.revenue_by_status",
+        sql: "SELECT subscription_status, customer_count, total_recurring_revenue, avg_monthly_price, total_revenue_collected\nFROM analytics.revenue_by_status;"
+      }
+    };
+
+    // Chart.js Default Dark Theme Setup
+    Chart.defaults.color = '#94A3B8';
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+    function initCharts() {
+      // 1. Contract Churn
+      const ctxContract = document.getElementById('chart-contract').getContext('2d');
+      charts.contract = new Chart(ctxContract, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Churn Rate %', data: [], backgroundColor: ['#F43F5E', '#F59E0B', '#10B981'], borderRadius: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 50, grid: { color: '#1F2937' } }, x: { grid: { display: false } } } }
+      });
+
+      // 2. Plan Churn
+      const ctxPlan = document.getElementById('chart-plan').getContext('2d');
+      charts.plan = new Chart(ctxPlan, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Churn Rate %', data: [], backgroundColor: '#38BDF8', borderRadius: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 45, grid: { color: '#1F2937' } }, x: { grid: { display: false } } } }
+      });
+
+      // 3. Payment Method Churn
+      const ctxPayment = document.getElementById('chart-payment').getContext('2d');
+      charts.payment = new Chart(ctxPayment, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Churn Rate %', data: [], backgroundColor: '#A855F7', borderRadius: 6 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, max: 50, grid: { color: '#1F2937' } }, y: { grid: { display: false } } } }
+      });
+
+      // 4. Tenure Cohort
+      const ctxTenure = document.getElementById('chart-tenure').getContext('2d');
+      charts.tenure = new Chart(ctxTenure, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Churn Rate %', data: [], backgroundColor: '#EC4899', borderRadius: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 110, grid: { color: '#1F2937' } }, x: { grid: { display: false } } } }
+      });
+
+      // 5. Revenue Breakdown
+      const ctxRevenue = document.getElementById('chart-revenue').getContext('2d');
+      charts.revenue = new Chart(ctxRevenue, {
+        type: 'doughnut',
+        data: { labels: ['Active MRR', 'Lost MRR (Churned)'], datasets: [{ data: [19218, 7992], backgroundColor: ['#10B981', '#EF4444'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%' }
+      });
+
+      // 6. Monthly Churn Trend
+      const ctxMonthly = document.getElementById('chart-monthly').getContext('2d');
+      const monthlyData = window.SQL_VIEWS?.monthly_churn || [];
+      charts.monthly = new Chart(ctxMonthly, {
+        type: 'line',
+        data: {
+          labels: monthlyData.map(d => d.month),
+          datasets: [
+            { label: 'Eligible Customers', data: monthlyData.map(d => d.eligible_customers), borderColor: '#38BDF8', tension: 0.3, pointRadius: 2 },
+            { label: 'Active Retained', data: monthlyData.map(d => d.active_customers), borderColor: '#10B981', borderDash: [4, 4], tension: 0.3, pointRadius: 2 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#1F2937' } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } } }
+      });
+
+      updateDashboard(allData);
+    }
+
+    function updateDashboard(data) {
+      const total = data.length;
+      const churned = data.filter(d => d.subscription_status === 'churned').length;
+      const retained = data.filter(d => d.subscription_status === 'active').length;
+      const churnRate = total > 0 ? ((churned / total) * 100).toFixed(1) : '0.0';
+      const retentionRate = total > 0 ? ((retained / total) * 100).toFixed(1) : '0.0';
+
+      const activeMRR = data.filter(d => d.subscription_status === 'active').reduce((acc, c) => acc + c.monthly_price, 0);
+      const churnedMRR = data.filter(d => d.subscription_status === 'churned').reduce((acc, c) => acc + c.monthly_price, 0);
+
+      document.getElementById('active-count').innerText = total.toLocaleString();
+      document.getElementById('kpi-total').innerText = total.toLocaleString();
+      document.getElementById('kpi-churn').innerText = churnRate + '%';
+      document.getElementById('kpi-churn-sub').innerText = `${churned.toLocaleString()} Churned Users`;
+      document.getElementById('kpi-retention').innerText = retentionRate + '%';
+      document.getElementById('kpi-retention-sub').innerText = `${retained.toLocaleString()} Retained Users`;
+      document.getElementById('kpi-mrr').innerText = '$' + Math.round(activeMRR).toLocaleString();
+      document.getElementById('kpi-lost-mrr').innerText = 'Lost MRR: $' + Math.round(churnedMRR).toLocaleString();
+
+      // Update Contract Chart
+      const contracts = ['Month-to-Month', 'One-Year', 'Two-Year'];
+      const contractRates = contracts.map(c => {
+        const sub = data.filter(d => d.contract_type === c);
+        const ch = sub.filter(d => d.subscription_status === 'churned').length;
+        return sub.length > 0 ? Number(((ch / sub.length) * 100).toFixed(1)) : 0;
+      });
+      charts.contract.data.labels = contracts;
+      charts.contract.data.datasets[0].data = contractRates;
+      charts.contract.update();
+
+      // Update Plan Chart
+      const plans = ['Premium', 'Family', 'Standard', 'Basic'];
+      const planRates = plans.map(p => {
+        const sub = data.filter(d => d.plan_name === p);
+        const ch = sub.filter(d => d.subscription_status === 'churned').length;
+        return sub.length > 0 ? Number(((ch / sub.length) * 100).toFixed(1)) : 0;
+      });
+      charts.plan.data.labels = plans;
+      charts.plan.data.datasets[0].data = planRates;
+      charts.plan.update();
+
+      // Update Payment Method Chart
+      const payments = ['Electronic Check', 'Bank Transfer', 'UPI', 'Credit Card'];
+      const payRates = payments.map(pm => {
+        const sub = data.filter(d => d.payment_method === pm);
+        const ch = sub.filter(d => d.subscription_status === 'churned').length;
+        return sub.length > 0 ? Number(((ch / sub.length) * 100).toFixed(1)) : 0;
+      });
+      charts.payment.data.labels = payments;
+      charts.payment.data.datasets[0].data = payRates;
+      charts.payment.update();
+
+      // Update Tenure Chart
+      const tenures = ['0-6 Months', '6-12 Months', '12-24 Months', '24+ Months'];
+      const tenureRates = tenures.map(t => {
+        const sub = data.filter(d => d.tenure_group === t);
+        const ch = sub.filter(d => d.subscription_status === 'churned').length;
+        return sub.length > 0 ? Number(((ch / sub.length) * 100).toFixed(1)) : 0;
+      });
+      charts.tenure.data.labels = tenures;
+      charts.tenure.data.datasets[0].data = tenureRates;
+      charts.tenure.update();
+
+      // Update Revenue Chart
+      charts.revenue.data.datasets[0].data = [Math.round(activeMRR), Math.round(churnedMRR)];
+      charts.revenue.update();
+    }
+
+    function applyFilters() {
+      const contract = document.getElementById('filter-contract').value;
+      const plan = document.getElementById('filter-plan').value;
+      const payment = document.getElementById('filter-payment').value;
+      const channel = document.getElementById('filter-channel').value;
+
+      filteredData = allData.filter(d => {
+        return (contract === 'ALL' || d.contract_type === contract) &&
+               (plan === 'ALL' || d.plan_name === plan) &&
+               (payment === 'ALL' || d.payment_method === payment) &&
+               (channel === 'ALL' || d.acquisition_channel === channel);
+      });
+
+      updateDashboard(filteredData);
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-contract').value = 'ALL';
+      document.getElementById('filter-plan').value = 'ALL';
+      document.getElementById('filter-payment').value = 'ALL';
+      document.getElementById('filter-channel').value = 'ALL';
+      filteredData = [...allData];
+      updateDashboard(filteredData);
+    }
+
+    // Table Pagination & Rendering
+    function renderTable() {
+      const search = document.getElementById('table-search').value.toLowerCase();
+      const statusFilter = document.getElementById('status-filter').value;
+
+      let rows = allData.filter(d => {
+        const matchesStatus = (statusFilter === 'ALL' || d.subscription_status === statusFilter);
+        const matchesSearch = d.customer_name.toLowerCase().includes(search) ||
+                              d.city.toLowerCase().includes(search) ||
+                              d.acquisition_channel.toLowerCase().includes(search) ||
+                              String(d.customer_id).includes(search);
+        return matchesStatus && matchesSearch;
+      });
+
+      const totalRows = rows.length;
+      const maxPages = Math.ceil(totalRows / pageSize) || 1;
+      if (currentPage > maxPages) currentPage = maxPages;
+
+      const startIdx = (currentPage - 1) * pageSize;
+      const endIdx = Math.min(startIdx + pageSize, totalRows);
+      const pageRows = rows.slice(startIdx, endIdx);
+
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+
+      pageRows.forEach(r => {
+        const tr = document.createElement('tr');
+        const badgeClass = r.subscription_status === 'active' ? 'badge-active' : 'badge-churned';
+        tr.innerHTML = `
+          <td><code>#${r.customer_id}</code></td>
+          <td style="font-weight:600;">${r.customer_name}</td>
+          <td>${r.city}</td>
+          <td><span style="color:var(--cyan); font-weight:600;">${r.plan_name}</span></td>
+          <td>${r.contract_type}</td>
+          <td>${r.payment_method}</td>
+          <td>$${r.monthly_price.toFixed(2)}</td>
+          <td>${r.tenure_months} mo</td>
+          <td><span class="badge ${badgeClass}">${r.subscription_status}</span></td>
+          <td style="font-weight:600;">$${r.total_revenue.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('page-info').innerText = `Showing ${totalRows > 0 ? startIdx + 1 : 0} to ${endIdx} of ${totalRows.toLocaleString()} customers`;
+      document.getElementById('btn-prev').disabled = currentPage <= 1;
+      document.getElementById('btn-next').disabled = currentPage >= maxPages;
+    }
+
+    function prevPage() {
+      if (currentPage > 1) { currentPage--; renderTable(); }
+    }
+    function nextPage() {
+      currentPage++; renderTable();
+    }
+    function handleTableSearch() {
+      currentPage = 1;
+      renderTable();
+    }
+
+    // SQL Studio Functions
+    function selectSqlQuery(viewName) {
+      activeSqlQuery = viewName;
+      document.querySelectorAll('.sql-tab').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const info = sqlQueries[viewName];
+      document.getElementById('sql-view-title').innerText = info.title;
+      document.getElementById('sql-code-display').innerText = info.sql;
+      executeCurrentQuery();
+    }
+
+    function executeCurrentQuery() {
+      const data = window.SQL_VIEWS?.[activeSqlQuery] || [];
+      const container = document.getElementById('sql-table-output');
+      if (data.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-dim); padding:1rem;">No records returned.</p>';
+        return;
+      }
+
+      const headers = Object.keys(data[0]);
+      let html = '<div style="overflow-x:auto;"><table><thead><tr>';
+      headers.forEach(h => html += `<th>${h.replace(/_/g, ' ')}</th>`);
+      html += '</tr></thead><tbody>';
+
+      data.forEach(row => {
+        html += '<tr>';
+        headers.forEach(h => {
+          let val = row[h];
+          if (typeof val === 'number') val = val.toLocaleString();
+          html += `<td>${val ?? '—'}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+    }
+
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+
+      document.getElementById('tab-dashboard').style.display = tabId === 'dashboard' ? 'block' : 'none';
+      document.getElementById('tab-explorer').style.display = tabId === 'explorer' ? 'block' : 'none';
+      document.getElementById('tab-sql').style.display = tabId === 'sql' ? 'block' : 'none';
+      document.getElementById('tab-airflow').style.display = tabId === 'airflow' ? 'block' : 'none';
+
+      if (tabId === 'explorer') renderTable();
+      if (tabId === 'sql') executeCurrentQuery();
+    }
+
+    // CSV Download
+    function downloadCuratedCSV() {
+      if (!allData || allData.length === 0) return;
+      const headers = Object.keys(allData[0]);
+      const csvRows = [headers.join(',')];
+      allData.forEach(row => {
+        csvRows.push(headers.map(h => JSON.stringify(row[h] ?? '')).join(','));
+      });
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'curated_customer_retention.csv');
+      a.click();
+    }
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      initCharts();
+      renderTable();
+    });
+  </script>
+</body>
+</html>
