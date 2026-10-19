@@ -6,8 +6,9 @@ A production-grade, end-to-end data engineering portfolio project that synthesiz
 
 ## 🌐 Live Interactive Demo (Resume Showcase)
 
-> **Live Demo Link:** `https://YOUR_GITHUB_USERNAME.github.io/customer-churn-retention-pipeline/`  
-> *(Deployable to GitHub Pages in 2 clicks, or launch locally with a single command below)*
+> **🚀 Live Clickable Demo URL:** [https://temporary-rushing-ochre-hsdpxgk.vercel.app](https://temporary-rushing-ochre-hsdpxgk.vercel.app)  
+> **Claim Link (to keep permanently on your Vercel account):** [https://vercel.com/claim-deployment?code=db8389e6-78ea-4bb4-b90d-f1ceda371aae](https://vercel.com/claim-deployment?code=db8389e6-78ea-4bb4-b90d-f1ceda371aae)  
+> **GitHub Pages URL (after pushing):** `https://YOUR_GITHUB_USERNAME.github.io/customer-churn-retention-pipeline/`
 
 An interactive, responsive executive analytics demo featuring:
 - **Interactive KPI Dashboard:** Real-time dynamic filtering across Contract Types, Subscription Plans, Payment Channels, and Marketing Funnels.
